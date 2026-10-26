@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Unjumble Game</title>
+<style>
+@font-face{font-family:'Hakgyoansim Boardmarker';src:url('Hakgyoansim_BoardmarkerR.ttf') format('truetype');font-display:swap}
+@font-face{font-family:'Hakgyoansim Poster';src:url('Hakgyoansim_PosterB.ttf') format('truetype');font-display:swap}
+:root{
+  --ink:#4a3476; --pink:#ff4f9a; --purple:#a060ef; --blue:#56aee7; --yellow:#ffc83d;
+  --cream:#fff7e7; --peach:#ffd8bd; --mint:#c9f4bc; --panel:#fffdf8; --shadow:0 14px 34px rgba(91,54,89,.18);
+  --nav-height:var(--tn-space,84px);
+  --title-font:'Hakgyoansim Poster',sans-serif;
+  --body-font:'Hakgyoansim Boardmarker',sans-serif;
+}
+*{box-sizing:border-box}
+*,*::before,*::after{font-weight:normal!important;font-synthesis:none}
+html{height:100%;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:linear-gradient(135deg,#ffe7d6,#fff6dc 48%,#f2dcff);color:var(--ink);font-family:var(--body-font);font-size:18px;overflow-x:hidden}
+body{padding-top:var(--nav-height)}
+button,input{font:inherit}
+button{border:0;cursor:pointer;color:inherit}
+body{font-size:18px}
+h1,h2,h3,h4,h5,h6{font-family:var(--title-font)}
+button:focus-visible,[tabindex]:focus-visible{outline:5px solid rgba(76,63,152,.38);outline-offset:3px}
+.fa-solid,.fa-regular{display:inline-block;font-family:Arial,sans-serif;font-style:normal;line-height:1}
+.fa-house::before{content:'Home';font-size:13px;font-weight:normal}.fa-play::before{content:'>'}.fa-circle-question::before{content:'?'}.fa-bell::before{content:'SFX';font-size:12px;font-weight:normal}.fa-bell-slash::before{content:'SFX';font-size:12px;text-decoration:line-through;font-weight:normal}.fa-music::before{content:'MUSIC';font-size:10px;font-weight:normal}.fa-volume-xmark::before{content:'MUSIC';font-size:10px;text-decoration:line-through;font-weight:normal}.fa-expand::before{content:'+';font-size:25px}.fa-compress::before{content:'-';font-size:25px}
+.screen{display:none;min-height:calc(1080px - var(--nav-height));animation:screenIn .35s ease}
+.screen.active{display:flex;flex-direction:column}
+@keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+#coverScreen{align-items:center;justify-content:center;background:url('Unjumble Game 표지.png') center/cover no-repeat;gap:clamp(6px,15.12px,14px);padding:0;--coverNote:86px;min-height:1080px;min-height:1080px;height:1080px;height:1080px;width:100%;position:relative;margin-top:calc(-1 * var(--nav-height))}
+.cover-frame{position:absolute;inset:0;width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center}
+.cover-hotspot{position:absolute;z-index:2;background:transparent;border-radius:999px;color:transparent;overflow:hidden;cursor:pointer;border:0;box-shadow:none;outline:none;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}
+.cover-hotspot::before,.cover-hotspot::after{display:none!important;content:none!important}
+.cover-hotspot:hover,.cover-hotspot:focus-visible,.cover-hotspot:active{transform:none;filter:none;box-shadow:none;outline:none}
+.cover-hotspot.help{left:31%;top:81%;width:18%;height:14%}
+.cover-hotspot.start{left:48%;top:81%;width:20%;height:14%}
+/* 표지: 지금 단원 이름 (문장 카드판과 시작 버튼 사이) */
+[data-unit-label]{position:absolute;z-index:3;left:50.3%;top:84.4%;transform:translate(-50%,-50%);max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff;color:#8b50d8;border:3px solid #d9c3f2;border-radius:999px;padding:3px 24px;font-size:25px;line-height:1.25;box-shadow:0 4px 12px rgba(75,45,92,.16);pointer-events:none}
+[data-unit-label][hidden]{display:none}
+.cover-corner{position:absolute;top:1.6%;right:1.5%;display:flex;gap:10px}
+.cover-corner .round-icon{background:rgba(255,255,255,.78);backdrop-filter:blur(8px)}
+
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px max(12px,env(safe-area-inset-left));background:rgba(255,252,246,.88);backdrop-filter:blur(14px);border-bottom:2px solid rgba(117,84,143,.12)}
+.top-nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:10px max(12px,env(safe-area-inset-left));background:rgba(255,252,246,.88);backdrop-filter:blur(14px);border-bottom:2px solid rgba(117,84,143,.12)}
+.top-nav .nav-group{display:flex;align-items:center;gap:10px}
+.top-nav .brand{font-size:clamp(22px,57.6px,34px);margin:0 auto 0 0;text-shadow:0 2px #fff}
+.top-nav .nav-btn{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:46px;padding:0 14px;border-radius:18px;background:#fff;box-shadow:0 5px 12px rgba(90,57,109,.13);transition:.2s;border:0;cursor:pointer;color:inherit;font-size:20px}
+.top-nav .nav-btn.icon-only{width:48px;padding:0}
+.top-nav .nav-btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(90,57,109,.2)}
+.top-nav .nav-btn[aria-label="게임 방법"]{font-size:18px}
+.top-nav .brand-label{display:none}
+.brand{font-size:clamp(22px,57.6px,34px);margin-right:auto;text-shadow:0 2px #fff}
+.round-icon,.pill-btn{min-height:46px;border-radius:18px;background:#fff;box-shadow:0 5px 12px rgba(90,57,109,.13);padding:0 15px;transition:.2s}
+.round-icon{width:48px;padding:0;font-size:21px}
+.round-icon:hover,.pill-btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(90,57,109,.2)}
+.utility-label{display:inline}
+.glass-pill{background:rgba(255,255,255,.9);backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(100,120,180,.15)}
+
+.page{width:min(1180px,calc(100% - 24px));margin:22px auto 40px;display:grid;gap:18px}
+.hero-card,.panel{background:rgba(255,253,248,.95);border:3px solid rgba(255,255,255,.95);border-radius:34px;box-shadow:var(--shadow)}
+.hero-card{padding:clamp(22px,76.8px,42px);display:grid;grid-template-columns:1.1fr .9fr;gap:26px;align-items:center;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,242,222,.96))}
+.hero-card h1{font-size:clamp(30px,86.4px,50px);line-height:1;margin:0 0 12px}
+.hero-card p{font-size:clamp(18px,46.08px,26px);margin:0;line-height:1.45}
+.snapshot{background:#fff;border-radius:28px;padding:18px;border:3px dashed #c08cc7;box-shadow:0 10px 20px rgba(80,50,90,.12);text-align:center}
+.snapshot-title{font-size:20px;margin-bottom:12px;color:#8a6a9c}
+.word-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.mini-word,.word-card{color:white;text-shadow:0 2px rgba(56,28,80,.15);box-shadow:0 7px 0 rgba(95,58,111,.14),0 10px 20px rgba(82,51,91,.16)}
+.mini-word{padding:16px 17px;border-radius:19px;font-size:clamp(17px,38.4px,24px);transform:rotate(var(--rot,0deg))}
+.palette-0{background:linear-gradient(145deg,#b170f3,#8d50dc)}
+.palette-1{background:linear-gradient(145deg,#ff5aa5,#ee2f82)}
+.palette-2{background:linear-gradient(145deg,#68c0f0,#4a9fda)}
+.palette-3{background:linear-gradient(145deg,#ffd550,#f6b91f)}
+.palette-4{background:linear-gradient(145deg,#72d5be,#38b99c)}
+.palette-5{background:linear-gradient(145deg,#ff9a56,#ff6b35)}
+.palette-6{background:linear-gradient(145deg,#c471ed,#9d4edd)}
+.palette-7{background:linear-gradient(145deg,#3a86ff,#1c5aa0)}
+.palette-8{background:linear-gradient(145deg,#fb5607,#c1121f)}
+
+.panel{padding:clamp(18px,57.6px,30px)}
+.section-title{display:flex;align-items:center;gap:12px;font-size:clamp(25px,65.28px,38px);margin:0 0 18px}
+.step-badge{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:15px;background:var(--yellow);color:#5f4083;box-shadow:0 5px 0 #e5aa2c}
+.category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.category-btn{display:flex;align-items:center;justify-content:center;gap:10px;min-width:0;overflow:hidden;text-align:center;padding:18px 16px;border-radius:22px;background:#fff;border:3px solid transparent;box-shadow:0 7px 16px rgba(75,45,92,.11);font-size:clamp(21px,44.16px,28px);transition:.2s;min-height:112px}
+.category-btn .emoji{font-size:30px}.category-btn .emoji:empty{display:none}
+.topic-label{display:grid;min-width:0;width:100%;justify-items:center;gap:5px}.category-btn .topic-label>span:first-child{max-width:100%;white-space:nowrap;font-size:clamp(14px,41.28px,28px);line-height:1.2}.topic-label small{max-width:100%;font-family:Arial,sans-serif;font-size:16px;color:#8a7398;letter-spacing:0}
+.category-btn:hover{transform:translateY(-3px)}
+.category-btn.selected{border-color:#a261ed;background:#f7eeff;box-shadow:0 7px 0 #c9a7ec}
+.sub-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.counter{margin-left:auto;background:#fff4bd;padding:10px 16px;border-radius:15px;color:#7b5d1d}
+.sub-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.sub-btn{padding:18px;border-radius:20px;background:#fff;border:3px solid #eadff1;box-shadow:0 6px 0 #e1d2e9;font-size:23px;transition:.2s}
+.sub-btn .sub-count{font-size:17px;color:#9a86a8;margin-left:4px}
+.sub-btn .topic-label small{font-size:15px}
+.sub-btn.selected{background:#e7f8de;border-color:#79c967;box-shadow:0 6px 0 #b6dda8}
+.sub-btn:hover{transform:translateY(-2px)}
+.select-all-btn{display:block;width:100%;margin-bottom:12px;background:#f4ebff;border-color:#d9c3f2;box-shadow:0 6px 0 #c9a7ec;font-weight:normal}
+.select-all-btn.selected{background:#e7f8de;border-color:#79c967;box-shadow:0 6px 0 #b6dda8}
+.sub-title-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.sub-badge{background:#f4ebff;border-radius:999px;padding:7px 12px;font-size:18px;color:#6e5390}
+.start-bar{display:flex;justify-content:center;margin-top:22px}
+.primary-btn,.secondary-btn,.danger-btn{border-radius:22px;padding:16px 26px;font-size:clamp(20px,46.08px,27px);box-shadow:0 7px 0 rgba(86,55,96,.18);transition:.2s}
+.primary-btn{background:linear-gradient(90deg,#ffd86a,#bff1a7);color:#523b75}
+.secondary-btn{background:linear-gradient(90deg,#bfe9ff,#ffc7e2)}
+.danger-btn{background:#ffe0df;color:#9b3c45}
+.primary-btn:hover,.secondary-btn:hover,.danger-btn:hover{transform:translateY(-3px)}
+.primary-btn:active,.secondary-btn:active,.danger-btn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(86,55,96,.18)}
+.primary-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.game-page{width:min(1180px,calc(100% - 20px));margin:16px auto 30px;display:grid;gap:14px}
+.game-hud{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center}
+.progress-wrap{height:22px;background:#efe5f2;border-radius:999px;overflow:hidden;border:3px solid #fff;box-shadow:inset 0 2px 5px rgba(74,45,91,.14)}
+.progress-bar{height:100%;width:0;background:linear-gradient(90deg,#5fc1ef,#ad72f3,#ff66a8);transition:width .45s ease;border-radius:999px}
+.hud-chip{background:#fff;border-radius:16px;padding:10px 14px;box-shadow:0 5px 12px rgba(72,43,91,.12);white-space:nowrap;font-size:18px}
+.game-board{background:rgba(255,253,248,.96);border-radius:34px;padding:clamp(18px,67.2px,36px);box-shadow:var(--shadow);border:3px solid #fff;min-height:560px;display:grid;grid-template-rows:auto auto 1fr auto;gap:18px}
+.question-top{display:grid;grid-template-columns:1fr;gap:10px;align-items:center;text-align:center}
+.prompt{display:grid;gap:8px;justify-items:center}
+.topic-line{font-size:clamp(18px,42.24px,22px);margin:0;color:#8b6f9e;background:#fff2cf;border-radius:999px;padding:8px 16px;box-shadow:0 5px 12px rgba(72,43,91,.08)}
+.prompt h2{font-weight:normal;font-synthesis:none;font-size:clamp(31px,84.48px,50px);margin:0 0 6px}
+.prompt p{font-size:clamp(22px,44.16px,27px);margin:0;color:#755f89}
+.answer-label{text-align:center;font-size:22px;color:#7a6490}
+.word-board{min-height:150px;border:4px dashed #c6a2d5;border-radius:28px;background:linear-gradient(180deg,#fff,#fff9ed);display:flex;align-content:center;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;padding:24px;transition:.2s}
+.word-board.shake{animation:shake .45s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+.word-card{padding:20px 24px;border-radius:22px;font-size:clamp(26px,65.28px,39px);user-select:none;touch-action:none;cursor:grab;position:relative;transition:transform .12s,box-shadow .12s;min-width:82px;text-align:center}
+.word-card:hover{transform:translateY(-4px) rotate(-1deg)}
+.word-card.dragging{opacity:.25;transform:scale(.95)}
+.drag-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.9;transform:rotate(3deg) scale(1.05);margin:0}
+.hint-box,.answer-reveal{display:none;border-radius:20px;padding:14px 18px;text-align:center;font-size:20px}
+.hint-box.show{display:block;background:#fff1be;border:3px solid #ffd361}
+.answer-reveal.show{display:block;background:#e8f7ff;border:3px solid #8fcce8}
+.game-actions{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap}
+.tiny-note{font-size:16px;color:#806b8d;text-align:center;width:100%}
+.feedback-toast{min-height:31px;text-align:center;font-size:21px;color:#9a597b}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(55,35,68,.48);display:none;align-items:center;justify-content:center;padding:18px;z-index:200;backdrop-filter:blur(5px)}
+.modal-backdrop.show{display:flex;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{position:relative;width:min(700px,100%);max-height:min(950.4px,760px);overflow:auto;background:#fffdf7;border-radius:34px;padding:26px;box-shadow:0 25px 80px rgba(39,25,54,.35);border:4px solid #fff;text-align:center;animation:pop .25s ease}
+.modal-close{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;background:#fff;border:2px solid #eadff1;box-shadow:0 4px 0 #e1d2e9;font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;transition:.2s}
+.modal-close:hover{transform:translateY(-2px)}
+@keyframes pop{from{transform:scale(.88);opacity:0}to{transform:none;opacity:1}}
+.modal h2{font-size:clamp(29px,76.8px,45px);margin:0 0 12px}
+.modal p,.modal li{font-size:19px;line-height:1.55}
+.exit-owl{display:block;width:min(150px,806.4px);height:auto;margin:12px auto 0}
+.how-list{display:grid;gap:12px;text-align:left;margin:18px 0;padding:0;list-style:none}
+.how-list li{background:#fff3df;border-radius:18px;padding:13px 15px;display:flex;gap:10px;align-items:flex-start}
+.how-section{padding:12px 14px;margin:12px 0;border:2px dashed #e7c9f3;border-radius:22px;background:#fffafd}
+.how-section h3{margin:0;color:#8b50d8;font-size:24px}.how-section p{margin:8px 0 0}.how-list li:nth-child(3n+1){background:#fff3df}.how-list li:nth-child(3n+2){background:#e9f8e3}.how-list li:nth-child(3n){background:#e8f5ff}
+.modal-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.correct-answer-card{margin:16px 0;background:#f3eaff;border-radius:22px;padding:18px;font-size:clamp(24px,63.36px,36px);color:#5d3c87}
+
+.result-wrap{width:min(950px,calc(100% - 22px));margin:24px auto 50px;display:grid;gap:18px}
+.result-card{background:#fffdf8;border-radius:38px;padding:clamp(24px,96px,48px);box-shadow:var(--shadow);border:4px solid #fff;text-align:center;position:relative;overflow:hidden}
+.result-card h1{font-size:clamp(40px,134.4px,78px);margin:0 0 8px}
+.score-big{font-size:clamp(58px,192px,110px);color:#8b50d8;text-shadow:0 6px #ead9ff;margin:12px 0}
+.result-stats{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+.stat{background:#fff0c8;border-radius:20px;padding:14px 20px;font-size:21px}
+.review{background:#fffdf8;border-radius:30px;padding:22px;box-shadow:var(--shadow)}
+.review h2{margin-top:0}
+.review-list{display:grid;gap:12px}
+.review-item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;text-align:left;background:#fff7ea;border-radius:16px;padding:14px 16px;align-items:start}
+.review-item.ok{background:#effbe9}.review-item.no{background:#fff0ef}
+.review-status{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#fff;color:#4a3476;box-shadow:0 3px 0 rgba(90,57,109,.16);font-size:15px;font-weight:normal;line-height:1.1;text-align:center}
+.review-play{width:42px;height:42px;border-radius:50%;background:#fff;box-shadow:0 3px 0 rgba(90,57,109,.16);font-size:19px}
+.review-play .fa-volume-high::before{content:'🔊';font-size:20px}
+.review-sentence{display:block;font-family:Arial,sans-serif;font-size:clamp(25px,42.24px,34px);font-weight:normal;line-height:1.3;color:#4a3476;margin-bottom:7px}
+.review-meaning{font-size:clamp(21px,34.56px,28px);color:#6e5a7e;line-height:1.4}
+.review-note{font-size:17px;color:#8a7398;margin-top:4px}
+.answer-meaning{font-size:clamp(24px,57.6px,30px)!important;line-height:1.5}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:12px;height:22px;border-radius:4px;animation:fall var(--d) linear infinite;animation-delay:var(--delay);background:var(--c);left:var(--x)}
+@keyframes fall{to{transform:translateY(900px) rotate(760deg)}}
+
+[data-tip]{position:relative}
+[data-tip]:hover::before{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#4e3b68;color:#fff;padding:8px 12px;border-radius:10px;font-size:16px;white-space:nowrap;z-index:99;box-shadow:0 5px 15px rgba(0,0,0,.18)}
+
+/* (1920x1080 고정 무대: 좁은 화면용 (max-width:780px) 삭제) */
+/* (1920x1080 고정 무대: 좁은 화면용 (max-width:480px) 삭제) */
+/* (1920x1080 고정 무대: 항상 적용) (min-width:1200px) */
+ .page,.game-page,.result-wrap{width:min(1600px,calc(100% - 48px))}
+
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
+
+.cover-note{flex:0 0 auto;width:min(100%,860px);text-align:center;
+ font-size:clamp(16px,28.8px,20px);line-height:1.35;color:#5b3f7a;background:rgba(255,255,255,.86);
+ border-radius:999px;padding:8px 18px;box-shadow:0 6px 16px rgba(90,60,110,.16);
+ border:2px solid rgba(255,255,255,.9)}
+
+#subPeek{position:fixed;z-index:300;display:none;width:min(380px,calc(1920px - 24px));max-height:290px;overflow:auto;
+ background:#fffdf7;border:3px solid #e8d8f4;border-radius:22px;box-shadow:0 18px 42px rgba(70,40,90,.26);
+ padding:14px 16px;text-align:left}
+#subPeek.show{display:block}
+.peek-head{font-size:18px;color:#6e5390;margin-bottom:9px;padding-bottom:8px;border-bottom:2px dashed #ecdff5}
+.peek-list{margin:0;padding-left:20px;display:grid;gap:8px}
+.peek-list li{font-size:17px;line-height:1.35;color:#4a3476}
+.peek-list li span{display:block;font-size:16px;color:#836e93;margin-top:2px}
+.peek-more{margin-top:8px;font-size:16px;color:#8a7398;text-align:center}
+
+#top-nav-bar-2,#top-nav-bar-3,#top-nav-bar-4,#top-nav-bar-5{display:none}
+/* (1920x1080 고정 무대: 항상 적용) (orientation:landscape) and (min-height:420px) */
+.page,.game-page,.result-wrap{margin-top:10px;margin-bottom:12px}.page{gap:10px}.hero-card{padding:14px 18px;gap:16px}.hero-card h1{font-size:34px;margin-bottom:6px}.hero-card p{font-size:18px}.snapshot{padding:10px}.snapshot-title{margin-bottom:7px}.mini-word{padding:8px 10px;font-size:18px}.panel{padding:12px 16px}.section-title{font-size:26px;margin-bottom:9px}.step-badge{width:34px;height:34px}.category-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.category-btn{padding:12px;font-size:22px;justify-content:center;min-height:0}.category-btn .emoji{font-size:22px}.topic-label small{font-size:17px}.game-board{min-height:0;padding:16px;gap:10px}.word-board{min-height:120px;padding:14px}.word-card{padding:14px 18px;font-size:clamp(23px,57.6px,33px)}.prompt h2{font-size:clamp(26px,67.2px,38px)}.game-actions button{padding:11px 18px;font-size:20px}#categoryScreen .page,#subScreen .page{min-height:calc(1080px - var(--nav-height) - 24px)}#categoryScreen .panel,#subScreen .panel{display:flex;flex-direction:column}#categoryScreen .category-grid,#subScreen .sub-grid{flex:1;grid-auto-rows:1fr}#subScreen .sub-btn{font-size:25px;padding:20px}#subScreen .sub-btn .topic-label small{font-size:17px}#subScreen .sub-toolbar{margin-bottom:18px}#subScreen .start-bar{margin-top:18px}
+
+/* (1920x1080 고정 무대: 좁은 화면용 (orientation:landscape) and (min-height:420px) and (max-width:700px) 삭제) */
+/* (1920x1080 고정 무대: 좁은 화면용 (orientation:landscape) and (min-height:420px) and (max-width:440px) 삭제) */
+/* (1920x1080 고정 무대: 항상 적용) (min-width:1200px) */
+ html,body{font-size:20px}
+ .hero-card h1{font-size:clamp(50px,61.44px,68px)}.hero-card p{font-size:clamp(26px,34.56px,34px)}.snapshot-title{font-size:26px}.mini-word{font-size:clamp(23px,32.64px,30px)}
+ .section-title{font-size:clamp(38px,49.92px,50px);margin-bottom:18px}.step-badge{width:54px;height:54px;font-size:28px}
+ .category-btn,.sub-btn{container-type:inline-size}.category-btn{min-height:150px;padding:22px 18px}.category-btn .topic-label>span:first-child{font-size:clamp(26px,12cqw,40px)}.category-btn .topic-label small{font-size:clamp(17px,8cqw,25px)}
+ .sub-btn{padding:24px;font-size:clamp(27px,12cqw,40px)}.sub-btn .topic-label>span:first-child{font-size:clamp(27px,12cqw,40px)}.sub-btn .topic-label small,.sub-btn .sub-count{font-size:clamp(18px,8cqw,25px)}
+ #subScreen .select-all-btn{min-height:132px;font-size:clamp(34px,46.08px,44px)}#subScreen .sub-btn[data-sub-id]{min-height:200px}#subScreen .sub-btn[data-sub-id] .topic-label>span:first-child{font-size:clamp(35px,14cqw,50px)}#subScreen .sub-btn[data-sub-id] .topic-label small,#subScreen .sub-btn[data-sub-id] .sub-count{font-size:clamp(24px,9cqw,32px)}
+ .counter,.sub-badge{font-size:32px}.primary-btn,.secondary-btn,.danger-btn{font-size:clamp(25px,32.64px,32px);padding:18px 30px}
+ .hud-chip{font-size:24px;padding:13px 18px}.progress-wrap{height:28px}.topic-line{font-size:28px;padding:10px 20px}.prompt h2{font-size:clamp(46px,61.44px,62px)}.word-board{min-height:200px}.word-card{font-size:clamp(34px,49.92px,48px);padding:24px 28px}.hint-box,.answer-reveal,.feedback-toast{font-size:26px}
+ .result-card h1{font-size:clamp(64px,92.16px,92px)}.score-big{font-size:clamp(84px,122.88px,126px)}.stat{font-size:28px;padding:17px 24px}.review{padding:30px}.review h2{font-size:44px}.review-item{grid-template-columns:72px 1fr 54px;gap:18px;padding:20px 22px}.review-status{width:72px;height:72px;font-size:19px}.review-play{width:54px;height:54px}.review-sentence{font-size:clamp(30px,40.32px,40px)}.review-meaning{font-size:clamp(25px,32.64px,32px)}
+ .modal{width:min(860px,100%);padding:34px}.modal h2{font-size:52px}.modal p,.modal li{font-size:25px}.how-section h3{font-size:30px}
+
+
+/* =====================================================================
+   공통 상단바 + 고정 무대
+   화면 전체(#app)를 1920x1080 무대 하나로 만들고 TopNav.fit 으로 통째로 확대/축소한다.
+   - 위의 원래 반응형 규칙은 1920x1080 에서 보이던 값으로 고정했다
+     (좁은 화면용 @media 는 삭제, 넓은 화면·가로 화면용 @media 는 항상 적용, vw/vh 는 px 로)
+   - 그래서 어떤 창에서도 큰 모니터에서 보던 모습 그대로, 크기만 바뀌고 스크롤이 생기지 않는다
+   ===================================================================== */
+:root{--nav-height:0px}
+html,body{height:100%;min-height:0;overflow:hidden;background:transparent}
+body{padding-top:0}
+#app{position:fixed;left:50%;top:50%;width:1920px;height:1080px;overflow:hidden;
+  background:linear-gradient(135deg,#ffe7d6,#fff6dc 48%,#f2dcff)}
+#app>.screen{height:1080px;min-height:0;overflow:hidden;animation:none}
+/* 표지: 무대 전체가 표지 그림. 버튼 두 개(How to Play·Start)는 그림 속 자리(%) */
+#coverScreen{background:none;margin-top:0;height:1080px;min-height:0}
+.cover-frame{position:absolute;inset:0;width:100%;height:100%;background:url('Unjumble Game 표지.png') center/100% 100% no-repeat}
+/* 주제·소주제 선택: 블록을 위아래로 늘려 화면을 꽉 채우던 것을 풀고, 적당한 높이로 가운데에 모은다 */
+#categoryScreen,#subScreen,#gameScreen{justify-content:center}
+#categoryScreen .page,#subScreen .page{min-height:0;margin-top:0;margin-bottom:0}
+#categoryScreen .category-grid,#subScreen .sub-grid{flex:none;grid-auto-rows:auto}
+#categoryScreen .category-btn{min-height:120px}
+#subScreen .select-all-btn{min-height:96px}
+#subScreen .sub-btn[data-sub-id]{min-height:150px}
+/* 게임 화면: 위에 붙어 있던 문제판을 세로 가운데로 */
+#gameScreen .game-page{margin-top:0;margin-bottom:0}
+/* 결과 화면만 내용이 길어 무대 안에서 스크롤한다 */
+#app>#resultScreen{overflow-y:auto;overscroll-behavior:contain}
+/* ── 박스 한 겹으로: 바깥 카드 안에 다시 흰 박스(패널)가 들어 있던 것을 걷어 내고,
+   그 공간만큼 폭을 넓히고 글자·블록을 키운다 */
+#app .hero-card,#app .panel,#app .game-board,#app .result-card,#app .review{background:none;border:0;box-shadow:none;border-radius:0}
+#app .page,#app .game-page,#app .result-wrap{width:calc(100% - 160px)}
+/* 주제 선택 */
+#app #categoryScreen .page{gap:44px}
+#app .hero-card{padding:0;grid-template-columns:1fr auto;gap:40px}
+#app .hero-card h1{font-size:84px;margin-bottom:14px}
+#app .hero-card p{font-size:36px;line-height:1.4}
+#app .snapshot{padding:22px 34px;border-width:4px}
+#app .snapshot-title{font-size:28px;margin-bottom:12px}
+#app .mini-word{font-size:40px;padding:14px 20px}
+#app .panel{padding:0}
+#app .section-title{font-size:56px;margin-bottom:26px;gap:18px}
+#app .step-badge{width:68px;height:68px;font-size:38px;border-radius:20px}
+#app #categoryScreen .category-grid{gap:22px}
+#app #categoryScreen .category-btn{min-height:196px;border-radius:30px}
+#app #categoryScreen .category-btn .topic-label>span:first-child{font-size:44px}
+#app #categoryScreen .category-btn .topic-label small{font-size:25px}
+/* 소주제 선택 */
+#app #subScreen .sub-toolbar{margin-bottom:22px}
+#app #subScreen .counter,#app #subScreen .sub-badge{font-size:34px}
+#app #subScreen .select-all-btn{min-height:130px;font-size:46px;margin-bottom:22px}
+#app #subScreen .sub-grid{gap:24px}
+#app #subScreen .sub-btn[data-sub-id]{min-height:280px;border-radius:30px}
+#app #subScreen .sub-btn[data-sub-id] .topic-label>span:first-child{font-size:60px}
+#app #subScreen .sub-btn[data-sub-id] .topic-label small,#app #subScreen .sub-btn[data-sub-id] .sub-count{font-size:32px}
+#app #subScreen .start-bar{margin-top:36px}
+#app .primary-btn,#app .secondary-btn,#app .danger-btn{font-size:40px;padding:22px 56px;border-radius:28px}
+/* 게임 */
+#app .game-page{gap:34px}
+#app .progress-wrap{height:34px}
+#app .hud-chip{font-size:34px;padding:14px 26px;border-radius:20px}
+#app .game-board{padding:0;gap:36px}
+#app .topic-line{font-size:32px;padding:10px 26px}
+#app .prompt h2{font-size:78px}
+#app .word-board{min-height:300px;padding:40px;gap:26px;border-width:5px;border-radius:36px}
+#app .word-card{font-size:66px;padding:30px 42px;border-radius:28px}
+#app .game-actions{gap:26px}
+#app .game-actions button{font-size:38px;padding:20px 46px}
+#app .hint-box,#app .answer-reveal,#app .feedback-toast{font-size:34px}
+/* 결과 */
+#app .result-card{padding:36px 0 10px}
+#app .result-card h1{font-size:110px}
+#app .score-big{font-size:150px}
+#app .stat{font-size:36px;padding:18px 30px}
+#app .review{padding:0}
+#app .review h2{font-size:52px}
+/* 팝업·미리보기·끌기 그림자도 무대 안에서 같은 배율로 */
+#app .modal-backdrop{position:absolute}
+#app #subPeek{position:absolute}
+#app .drag-ghost{position:absolute}
+/* 팝업이 떠 있는 동안은 상단바를 감춘다 */
+body:has(#modalBackdrop.show) #top-nav-bar{visibility:hidden}
+/* "화면을 가로로 돌려 주세요" 안내창이 떠 있는 동안은 상단바를 감춘다 */
+body.rotate-open #top-nav-bar{visibility:hidden}
+/* 휴대폰 세로 안내는 상단바보다 위에 */
+#rotate-overlay{z-index:2147483600 !important}
+/* 정답·오답 팝업: 제목 아래 글자(문장·뜻·점수)도 제목(52px)과 같은 크기로 */
+#app .modal .correct-answer-card,#app .modal #modalBody:has(.correct-answer-card) p{font-size:52px!important;line-height:1.35}
+/* How to Play 팝업: 스크롤 없이 한 번에 보이도록 높이 제한을 무대(1080px) 안에서 넓힌다 */
+#app .modal:has(.how-section){max-height:1040px}
+/* 태블릿·모바일: 두 손가락·두 번 탭 확대를 막고(밀어서 스크롤만 허용), 가로로 돌렸을 때 글자 자동 확대도 막는다 */
+html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* How to Play: 게임 방법·점수 규칙의 줄마다 나뉘어 있던 박스를 섹션마다 하나로 합친다 */
+#app .how-list{gap:6px;padding:14px 20px;border-radius:18px;background:#fff3df}
+#app .how-section:last-child .how-list{background:#e9f8e3}
+#app .how-list li,#app .how-list li:nth-child(n){background:none;border-radius:0;padding:0}
+/* 결과 화면 문장 복습: 앞 절반은 왼쪽, 나머지는 오른쪽 칸 (행 수는 finishGame 에서 정한다) */
+#app #reviewList{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:column;column-gap:24px}
+/* 소주제 미리보기: 문장 글자를 소주제 영어 이름(First Greetings, 32px)과 같게 */
+#app #subPeek{width:760px;max-height:none}
+#app .peek-list li{font-size:32px}
+</style>
+<link rel="stylesheet" href="topnav.css">
+</head>
+<body class="cover-active">
+
+<!-- [추가] 휴대폰 세로 화면 안내 - 태블릿에는 안 뜨고, 휴대폰 화면 크기에서 세로로 시작했을 때만 뜬다.
+     가로로 돌리면 자동으로 사라지고, "이대로 할래요"를 누르면 세로로도 계속 플레이할 수 있다. -->
+<div id="rotate-overlay" style="display:none;position:fixed;inset:0;z-index:2147483000;background:linear-gradient(135deg,#ffe7d6,#fff6dc 48%,#f2dcff);flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:36px;text-align:center;">
+    <div style="width:92px;height:148px;border:9px solid #a060ef;border-radius:26px;background:#ffffff;animation:rotateHintUJ 2.6s ease-in-out infinite;"></div>
+    <h2 style="font-family:'Hakgyoansim Poster',sans-serif;font-size:24px;color:#4a3476;margin:0;">화면을 가로로 돌려 주세요</h2>
+    <p style="font-family:'Hakgyoansim Boardmarker',sans-serif;font-size:16px;color:#755f89;margin:0;line-height:1.6;">가로로 놓으면 글자와 단어 블록이 커져서<br>훨씬 편하게 할 수 있어요.</p>
+    <button type="button" onclick="dismissRotateOverlay()" style="font-family:'Hakgyoansim Poster',sans-serif;font-size:17px;color:#523b75;background:linear-gradient(90deg,#ffd86a,#bff1a7);border:none;border-radius:22px;box-shadow:0 7px 0 rgba(86,55,96,.18);padding:14px 32px;cursor:pointer;">이대로 할래요</button>
+</div>
+<style>
+@keyframes rotateHintUJ {
+    0%, 15% { transform: rotate(0deg); }
+    45%, 60% { transform: rotate(-90deg); }
+    90%, 100% { transform: rotate(0deg); }
+}
+</style>
+<script>
+(function () {
+    var overlay = document.getElementById('rotate-overlay');
+    if (!overlay) return;
+    var dismissed = false;
+    // [수정 10/20] Save the Icecream·Anagram 과 같은 기준으로 맞춘다.
+    // 예전에는 기기 화면 크기(screen.width)로 휴대폰인지 판단해서, PC 창을 세로로 줄였을 때나
+    // screen.width 를 실제 픽셀로 알려 주는 일부 안드로이드·앱 속 브라우저에서는 안 떴다.
+    // 이제 지금 창 모양만 본다: 세로이고 가로 폭이 640px(1280 무대 배율 0.5)보다 좁으면 띄운다.
+    // 아이패드 세로(768px 이상)처럼 충분히 큰 화면에서는 뜨지 않는다.
+    function shouldShow() {
+        var w = window.innerWidth, h = window.innerHeight;
+        return !dismissed && h > w && w < 640;
+    }
+    function updateRotateOverlay() {
+        var show = shouldShow();
+        overlay.style.display = show ? 'flex' : 'none';
+        document.body.classList.toggle('rotate-open', show); // 안내창이 떠 있는 동안 상단바 숨김
+    }
+    window.dismissRotateOverlay = function () {
+        dismissed = true;
+        updateRotateOverlay();
+    };
+    window.addEventListener('resize', updateRotateOverlay);
+    // '이대로 할래요' 는 이번만 넘긴다. 기기를 돌리면 다시 판단해서 알려 준다.
+    // 돌린 직후에는 창 크기가 늦게 바뀌는 기기가 있어 한 박자 뒤에 한 번 더 맞춘다
+    function onRotate() {
+        dismissed = false;
+        updateRotateOverlay();
+        setTimeout(updateRotateOverlay, 300);
+    }
+    window.addEventListener('orientationchange', onRotate);
+    if (screen.orientation && screen.orientation.addEventListener) {
+        screen.orientation.addEventListener('change', onRotate);
+    }
+    updateRotateOverlay();
+})();
+</script>
+
+<div id="top-nav-bar" aria-label="게임 네비게이션"><div class="nav-btn-group"><button type="button" class="nav-btn-circle" title="처음으로" aria-label="처음으로" onclick="navHome()"><i class="fa-solid fa-house"></i></button><button type="button" class="nav-btn-circle" title="뒤로" aria-label="뒤로" onclick="navBack()"><i class="fa-solid fa-play" style="transform:scaleX(-1)"></i></button><button type="button" class="nav-btn-circle" title="앞으로" aria-label="앞으로" onclick="navForward()"><i class="fa-solid fa-play"></i></button></div><div class="nav-btn-group"><button type="button" class="nav-btn-circle" title="How to Play" aria-label="게임 방법" onclick="openHelp()"><i class="fa-regular fa-circle-question"></i></button><button type="button" class="nav-btn-circle" title="효과음 On/Off" aria-label="효과음 켜기/끄기" onclick="toggleSfx()"><i id="sfx-toggle-icon" class="fa-solid fa-bell"></i></button><button type="button" class="nav-btn-circle" title="배경음악 On/Off" aria-label="배경음악 켜기/끄기" onclick="toggleBgm()"><i id="music-toggle-icon" class="fa-solid fa-music"></i></button><button type="button" class="nav-btn-circle" title="전체화면" aria-label="전체 화면" onclick="toggleFullscreen()"><i id="fullscreen-toggle-icon" class="fa-solid fa-expand"></i></button></div></div>
+<script src="topnav.js" data-backdrop="Unjumble Game 표지.png"></script>
+<script src="unit-data.js"></script>
+<script src="unit.js"></script>
+<div id="app">
+  <section id="coverScreen" class="screen active" aria-label="게임 표지">
+    <div class="cover-frame">
+      <div id="top-nav-bar-cover" aria-label="게임 네비게이션" style="display:none">
+        <div class="nav-btn-group">
+          <button type="button" id="nav-home-btn" class="nav-btn-circle" title="처음으로" aria-label="처음으로" onclick="navHome()"><i class="fa-solid fa-house"></i></button>
+          <button type="button" id="nav-back-btn" class="nav-btn-circle" title="뒤로" aria-label="뒤로" onclick="navBack()"><i class="fa-solid fa-play" style="transform:scaleX(-1)"></i></button>
+          <button type="button" id="nav-forward-btn" class="nav-btn-circle" title="앞으로" aria-label="앞으로" onclick="navForward()"><i class="fa-solid fa-play"></i></button>
+        </div>
+        <div class="nav-btn-group">
+          <button type="button" id="nav-htp-btn" class="nav-btn-circle" title="How to Play" aria-label="게임 방법" onclick="openHelp()"><i class="fa-regular fa-circle-question"></i></button>
+          <button type="button" id="sfx-toggle-btn-cover" class="nav-btn-circle" title="효과음 On/Off" aria-label="효과음 켜기/끄기" onclick="toggleSfx()"><i id="sfx-toggle-icon-cover" class="fa-solid fa-bell"></i></button>
+          <button type="button" id="music-toggle-btn-cover" class="nav-btn-circle" title="배경음악 On/Off" aria-label="배경음악 켜기/끄기" onclick="toggleBgm()"><i id="music-toggle-icon-cover" class="fa-solid fa-music"></i></button>
+          <button type="button" id="fullscreen-toggle-btn-cover" class="nav-btn-circle" title="전체화면" aria-label="전체 화면" onclick="toggleFullscreen()"><i id="fullscreen-toggle-icon-cover" class="fa-solid fa-expand"></i></button>
+        </div>
+      </div>
+      <button type="button" class="cover-hotspot help" aria-label="게임 방법" onclick="openHelp('intro')"></button>
+      <button type="button" class="cover-hotspot start" aria-label="게임 시작" onclick="startFromCover()"></button>
+      <div data-unit-label hidden></div>
+    </div>
+  </section>
+
+  <section id="categoryScreen" class="screen">
+    <div id="top-nav-bar-2" aria-label="게임 네비게이션">
+      <div class="nav-btn-group">
+        <button type="button" id="nav-home-btn-2" class="nav-btn-circle" title="처음으로" aria-label="처음으로" onclick="navHome()"><i class="fa-solid fa-house"></i></button>
+        <button type="button" id="nav-back-btn-2" class="nav-btn-circle" title="뒤로" aria-label="뒤로" onclick="navBack()"><i class="fa-solid fa-play" style="transform:scaleX(-1)"></i></button>
+        <button type="button" id="nav-forward-btn-2" class="nav-btn-circle" title="앞으로" aria-label="앞으로" onclick="navForward()"><i class="fa-solid fa-play"></i></button>
+      </div>
+      <div class="nav-btn-group">
+        <button type="button" id="nav-htp-btn-2" class="nav-btn-circle" title="How to Play" aria-label="게임 방법" onclick="openHelp()"><i class="fa-regular fa-circle-question"></i></button>
+        <button type="button" id="sfx-toggle-btn-2" class="nav-btn-circle" title="효과음 On/Off" aria-label="효과음 켜기/끄기" onclick="toggleSfx()"><i id="sfx-toggle-icon-2" class="fa-solid fa-bell"></i></button>
+        <button type="button" id="music-toggle-btn-2" class="nav-btn-circle" title="배경음악 On/Off" aria-label="배경음악 켜기/끄기" onclick="toggleBgm()"><i id="music-toggle-icon-2" class="fa-solid fa-music"></i></button>
+        <button type="button" id="fullscreen-toggle-btn-2" class="nav-btn-circle" title="전체화면" aria-label="전체 화면" onclick="toggleFullscreen()"><i id="fullscreen-toggle-icon-2" class="fa-solid fa-expand"></i></button>
+      </div>
+    </div>
+    <main class="page">
+      <section class="hero-card">
+        <div>
+          <h1>Unjumble Game 🧩</h1>
+          <p>단어 카드를 끌어서 올바른<br>영어 문장을 완성해 보세요!</p>
+        </div>
+        <div class="snapshot" aria-label="예시 문장 카드">
+          <div class="snapshot-title">이런 식으로 놓아요</div>
+          <div class="word-row">
+            <span class="mini-word palette-0" style="--rot:-2deg">She</span>
+            <span class="mini-word palette-1" style="--rot:1deg">wears</span>
+            <span class="mini-word palette-2" style="--rot:-1deg">a</span>
+            <span class="mini-word palette-3" style="--rot:2deg">red</span>
+            <span class="mini-word palette-4" style="--rot:-1.5deg">hat.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title"><span class="step-badge">1</span> 학년을 선택하세요.</h2>
+        <div id="categoryGrid" class="category-grid"></div>
+      </section>
+    </main>
+  </section>
+
+  <section id="subScreen" class="screen">
+    <div id="top-nav-bar-3" aria-label="게임 네비게이션">
+      <div class="nav-btn-group">
+        <button type="button" id="nav-home-btn-3" class="nav-btn-circle" title="처음으로" aria-label="처음으로" onclick="navHome()"><i class="fa-solid fa-house"></i></button>
+        <button type="button" id="nav-back-btn-3" class="nav-btn-circle" title="뒤로" aria-label="뒤로" onclick="navBack()"><i class="fa-solid fa-play" style="transform:scaleX(-1)"></i></button>
+        <button type="button" id="nav-forward-btn-3" class="nav-btn-circle" title="앞으로" aria-label="앞으로" onclick="navForward()"><i class="fa-solid fa-play"></i></button>
+      </div>
+      <div class="nav-btn-group">
+        <button type="button" id="nav-htp-btn-3" class="nav-btn-circle" title="How to Play" aria-label="게임 방법" onclick="openHelp()"><i class="fa-regular fa-circle-question"></i></button>
+        <button type="button" id="sfx-toggle-btn-3" class="nav-btn-circle" title="효과음 On/Off" aria-label="효과음 켜기/끄기" onclick="toggleSfx()"><i id="sfx-toggle-icon-3" class="fa-solid fa-bell"></i></button>
+        <button type="button" id="music-toggle-btn-3" class="nav-btn-circle" title="배경음악 On/Off" aria-label="배경음악 켜기/끄기" onclick="toggleBgm()"><i id="music-toggle-icon-3" class="fa-solid fa-music"></i></button>
+        <button type="button" id="fullscreen-toggle-btn-3" class="nav-btn-circle" title="전체화면" aria-label="전체 화면" onclick="toggleFullscreen()"><i id="fullscreen-toggle-icon-3" class="fa-solid fa-expand"></i></button>
+      </div>
+    </div>
+    <main class="page">
+      <section class="panel">
+        <h2 class="section-title"><span class="step-badge">2</span> <span id="subHeading">단원을 선택하세요.</span></h2>
+        <div id="subGrid" class="sub-grid"></div>
+      </section>
+    </main>
+  </section>
+
+  <section id="gameScreen" class="screen">
+    <div id="top-nav-bar-4" aria-label="게임 네비게이션">
+      <div class="nav-btn-group">
+        <button type="button" id="nav-home-btn-4" class="nav-btn-circle" title="처음으로" aria-label="처음으로" onclick="confirmHome()"><i class="fa-solid fa-house"></i></button>
+        <button type="button" id="nav-back-btn-4" class="nav-btn-circle" title="주제 선택으로" aria-label="뒤로" onclick="navBack()"><i class="fa-solid fa-play" style="transform:scaleX(-1)"></i></button>
+        <button type="button" id="nav-forward-btn-4" class="nav-btn-circle" title="앞으로" aria-label="앞으로" onclick="navForward()"><i class="fa-solid fa-play"></i></button>
+      </div>
+      <div class="nav-btn-group">
+        <button type="button" id="nav-htp-btn-4" class="nav-btn-circle" title="How to Play" aria-label="게임 방법" onclick="openHelp()"><i class="fa-regular fa-circle-question"></i></button>
+        <button type="button" id="sfx-toggle-btn-4" class="nav-btn-circle" title="효과음 On/Off" aria-label="효과음 켜기/끄기" onclick="toggleSfx()"><i id="sfx-toggle-icon-4" class="fa-solid fa-bell"></i></button>
+        <button type="button" id="music-toggle-btn-4" class="nav-btn-circle" title="배경음악 On/Off" aria-label="배경음악 켜기/끄기" onclick="toggleBgm()"><i id="music-toggle-icon-4" class="fa-solid fa-music"></i></button>
+        <button type="button" id="fullscreen-toggle-btn-4" class="nav-btn-circle" title="전체화면" aria-label="전체 화면" onclick="toggleFullscreen()"><i id="fullscreen-toggle-icon-4" class="fa-solid fa-expand"></i></button>
+      </div>
+    </div>
+    <main class="game-page">
+      <div class="game-hud">
+        <div class="progress-wrap" aria-label="게임 진행률"><div id="progressBar" class="progress-bar"></div></div>
+        <div id="roundChip" class="hud-chip">1 / 10</div>
+        <div id="scoreChip" class="hud-chip">⭐ 0점</div>
+      </div>
+      <section class="game-board">
+        <div class="question-top">
+          <div class="prompt">
+            <p id="topicLine" class="topic-line">주제</p>
+            <h2>카드를 드래그해 문장을 완성해요</h2>
+          </div>
+        </div>
+        <div>
+          <div id="wordBoard" class="word-board" aria-label="단어 카드 정렬 영역"></div>
+        </div>
+        <div>
+          <div id="hintBox" class="hint-box"></div>
+          <div id="answerReveal" class="answer-reveal"></div>
+          <div id="feedbackToast" class="feedback-toast" aria-live="polite"></div>
+        </div>
+        <div class="game-actions">
+          <button class="secondary-btn" onclick="reshuffleCurrent()">🔀 다시 섞기</button>
+          <button id="hintBtn" class="secondary-btn" onclick="useHint()">💡 힌트</button>
+          <button id="submitBtn" class="primary-btn" onclick="submitAnswer()">✅ 제출하기!</button>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <section id="resultScreen" class="screen">
+    <div id="top-nav-bar-5" aria-label="게임 네비게이션">
+      <div class="nav-btn-group">
+        <button type="button" id="nav-home-btn-5" class="nav-btn-circle" title="처음으로" aria-label="처음으로" onclick="navHome()"><i class="fa-solid fa-house"></i></button>
+        <button type="button" id="nav-back-btn-5" class="nav-btn-circle" title="뒤로" aria-label="뒤로" onclick="navBack()"><i class="fa-solid fa-play" style="transform:scaleX(-1)"></i></button>
+        <button type="button" id="nav-forward-btn-5" class="nav-btn-circle" title="앞으로" aria-label="앞으로" onclick="navForward()"><i class="fa-solid fa-play"></i></button>
+      </div>
+      <div class="nav-btn-group">
+        <button type="button" id="nav-htp-btn-5" class="nav-btn-circle" title="How to Play" aria-label="게임 방법" onclick="openHelp()"><i class="fa-regular fa-circle-question"></i></button>
+        <button type="button" id="sfx-toggle-btn-5" class="nav-btn-circle" title="효과음 On/Off" aria-label="효과음 켜기/끄기" onclick="toggleSfx()"><i id="sfx-toggle-icon-5" class="fa-solid fa-bell"></i></button>
+        <button type="button" id="music-toggle-btn-5" class="nav-btn-circle" title="배경음악 On/Off" aria-label="배경음악 켜기/끄기" onclick="toggleBgm()"><i id="music-toggle-icon-5" class="fa-solid fa-music"></i></button>
+        <button type="button" id="fullscreen-toggle-btn-5" class="nav-btn-circle" title="전체화면" aria-label="전체 화면" onclick="toggleFullscreen()"><i id="fullscreen-toggle-icon-5" class="fa-solid fa-expand"></i></button>
+      </div>
+    </div>
+    <main class="result-wrap">
+      <section class="result-card">
+        <div id="confetti" class="confetti"></div>
+        <h1 id="resultTitle">정말 잘했어요!</h1>
+        <div id="resultScore" class="score-big">0점</div>
+        <div class="result-stats">
+          <div id="resultCorrect" class="stat">정답 0개</div>
+          <div id="resultCategory" class="stat">카테고리</div>
+        </div>
+        <div class="modal-actions">
+          <button class="primary-btn" onclick="replaySame()">같은 단원으로 다시</button>
+          <button class="secondary-btn" onclick="goToCategory()">다른 단원 고르기</button>
+          <button class="secondary-btn" onclick="goHome()">처음으로</button>
+        </div>
+      </section>
+      <section class="review">
+        <h2>문장 복습</h2>
+        <div id="reviewList" class="review-list"></div>
+      </section>
+    </main>
+  </section>
+</div>
+
+<div id="subPeek" role="tooltip" aria-hidden="true"></div>
+
+<div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <button class="modal-close" aria-label="닫기" onclick="closeModal()">✕</button>
+    <h2 id="modalTitle">게임 방법</h2>
+    <div id="modalBody"></div>
+    <div id="modalActions" class="modal-actions"></div>
+  </div>
+</div>
+
+<audio id="correctSound" preload="auto" src="data:audio/mpeg;base64,//vQZAAP8AAAaQAAAAgAAA0gAAABAAABpBQAACAAADSCgAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVGw2Gw1Gw2Gw2Gw2Gwl/2GCMJl1DLMx/zD4FEjUcBFRm+mf5hoCmQxGYSx5hikf5mEVgASGq2AYCRv/4GGhk4DGGwyc3j5l6KmJD5//7Si6wODiD5slGmHTcKGMz0cP//9kBgEcmTQ+aLCZjwRGJAUYMEJx7bH/+kbAk////5hEHmBwePAoHAguhGTKC6MhCEyGUDDJVEAXMFDL////4vSXs3Ma3PmSBEDUIbUTAKHphgBvsPAL/////9m7DIEVgaW66l7wOoAhEmuEAEIFqMAXAANABe4sz///////sEgOLwu9L4vYzp8hEA2oK3AIHIIVUlpFq24OpGv/////////+YY25fqxLN27euc993CUxZ1KHKbDNuK70Skc7LaTqhWbOFgDLqQBIyhoLHYYdN1hqwOOFR83N0GIMMcYFX5kTjCC4tQsIZoDDAKA08SAMCgT8OUC+gz4yYpcwAwADQHAMFgiDYoL/Bqv+xkak+T6ozAIAIBQEhgofQzY5n/TdBRgxaN0CZHUWSXJ8ioXiH7Cz//qZNOggt01ECHSTBqTRTMS6WDI2//7ILTT/8xWSpSJoLtPmUf///+g0shmAAAAAAAABQgCkwWQbhCCCYIgCJg2B0mKK0aZOIRI6B2YRwSpg4gCGEACKBADTCDCSMEkFwWAlMHwBkwKQZjA1ByP/70mT/gAjyZlDuc4AAnmwpwMbUADWxpSG97wAD3LQlt7XAAKwITCvAoMAoFEwegITCGFvNe0FIxBQfDBjBVMI4A8wTQVDADAIMBMAgwHQIjAJAYMEcAQwUgHBoG4wCwJAACWCgaTAcATCwCQhAGMBEBgRgQl4DAAARMAsAQwEQCDAnAsCAOiwBEBQDDAxBIMFkJQwBxIjFrYXNWIXMweglzCyCDMBIA0AAJiwNr7IHAUAJy0EYsAArElc7z6AYAou6gNS1CACVZjAXCEMLwDlH1aZaYwGQODBXBaMG8iQwigczBSA3XYFwAC9SjcNruWNMyhYN5UOLDnCYc8UG2H+d5IQEgAGBeAvKYaXhD7tQU60grAgEEFBORqSRtlTdnJhT8wDFZBJ4kEABs6t7gKjmoeyi1Blu1TxWUwzhUl0Si1Z/qaRZWI1Dz71XZMBACJiU8ny+6PBMAbHJLLm4SmfgJtotDTS2Kr/U1hhr71vI/sfhl2YK+C38hmlsRqLSmTyjJqxhJwiYDNBWtr31SWgAAIAAAAQHjTgu0uVLYymwOuQJI2monGDAKIs1dImBAgGXBcpVFRIFAoKDk1yEzDAHEgYsOqi1aWROegBAWqFzJBSzkasSechmUPo4TOn+WsXWLhAELCERmM5AbcIZjIJqAMGmkh4y7tyRya3W+Asvq1b0zDq2VwVLUtXMl8DRcJNJlTTsKXPnbOpnUzTfKbGPaW/Wkssbk41NdiUO2px3V4igZBwsi97HHHeGdzPWPJZjz8d67+O9a7+/1++c3jVx1+Pd8xxVLT2Xel7vum1l5Z19Yy/U [truncated]
+<audio id="wrongSound" preload="auto" src="data:audio/mpeg;base64,//vQxAADKgGs/k1nC46HQV9Bzek5AQazSlQqCNI6NwUMSnMGgN4WMapDDxnSYwmOBCPSg5rjwqN5QHIQ4Ya5wvg59YBMAEGGwgjimu6cihwKqnbaClh5g28znBTHMiw8ngUIYQTBVN4u+jL33WPDUCg0ppCyphIKYIWm8LbypnEfYQgAbeXvvB9E4bjwEXUNJS/bSIRJF2SF23fWgWwQUf0t2YzmlJpKDhr0eNicaZw7kYjEOLnSLZe/8Npzlpy26dbXGGPYreXfLlp1tkLOGkKV6p3eCgDMg0GAxFqSpgCEhFB1MKSkpLefcKkMQ5GJlLwuQW0QAPJK7mMwzt+6Z/LMrdtYdMdHxiDkP4wAs4YAFkCzBrKYxgYaK4JCChsHZWxNlk6/9NGFyN4jeWjLQIoQc4bX4fjcb7K6ZrCPAAABgFyC0iABa9PT09PT2w8AAAAAAw8PDw8AAAAAAw8PDw8AAAAAMeGox+xjHpBMzsU0pHTvMaNmM05JSjeDIJGQbjOGhjRgRqYUeGcz5ui8bk1mzDRoiCI/o472MQmAUIG7jxt52bUHGGnRibWYgeG2CZik6aEhn2sRuEyZwZmPpRow2eDhHlJYNISYSFyQxMTMWNgsDGVKGMHlUcQDiY4bwiWHwsqEbcykE4BMkIG/emPGGPImSGGLFEA+lJj5IRMeOLA++RHzGjDGiihMY90TG8CwQMiNFikPWzGFoWNgTJQTKFTJESUeSlBGWMgNMUPgExIhxaXH+AACh0l2cpMABvEIIZCEQVKUEFyyo4BQIEIAzYAlNGXLFgARAgCYAIAmBUxZUsyW2LZItWkoKampqarS0tLS2UC8i0qAZWte7+oBarF4ymNaqrYUdW4kKomowkSnCiuq6Gi5SAZFdWZcBUCaIRE9ohFM6a8/xMNJA8phl/YySByIbOykgDyomCd/8celQJWIRF+lsyl2Ros7z/P9Go1Go1GpTGZbS0tLS0tLTU1NTU1NTU1NS0tLS0tLS0tLTU1NTU1NTU1NS0tLS0tLS0tKNSwsWbehW55ON6nOSVsYppW5t6rFmhAsWZW05JrFFbmKaKYYpiEJlbCmmKYVsZWxW5imFbmVsVsZWxWxYP/70sQeA/N9ot4Pd3hGLTQdAe5q0FNKxTDK3WLNCBCAytlijK2FMMUwrYrK2MUwrYythTSwsWZWxW5lbimlgU00IEITK2K3KxTCwVsbeoppimIQmhAsUZWxW5imlbeYpophimimeYpoppWphYUzytTfLCmFamHWymlamlhTTLouzLsujmkuisuzZAuiwXZWXRl0XRYLsy7Lr/K/v/K/or+j+/ssfZY+z+/vz+/ssfZ/f35sXGVsR8TGWGLywxf5YYywx+WGI2JiNjY/8rYitiLDGVsRYYjYmLywxebExeWGIsMXmxMRYYvLDGWGMrYjYmI2LiNiYj4mIsMRsTEbExFbF/lhiK2IrYiti//K2L/////////K4kriSxE///5xMScTEnExJxMScTEnERBxEQVxBxER//5xEQVxJxMScTEnExJxMScTEnExJxMSVxP///5XE+VxP///5YiCxEFcQcTElcSWIn/LEQcREHERBxEQcTEnExJjxFxGbEXGVpxmLEPEYcRcZgxixlYsRrxmxFZMRgxgxlYcZhxAxFgWIsDxGbGLGYMQcRkxBxmHGLGYsZMZhxhxFgmIsAxGPGHGYcYcZlxAxlgeIw4hYjDiJiMOMWMw4x4jBjDjKw4zFjBjMeIWIz40YjBjLjMOMGM3FYytxFgxlgxGYzGZiMRYMZmIxmYzEVmMzG4iw4ytxGYjGVmI3E4/MxGIzFYzcRjMxGL/8rMRmMxGYjGZiMXlgx+WF/la41641y81y4rX+a5ea5f5r15+l5kSBvXhWRLBAyBEsEDIEfLBAyJAyJHysj5kCBYImReGdO"></audio>
+<audio id="completeSound" preload="auto" src="data:audio/mpeg;base64,//PkZAAgrb0EAKe8AJRJneR/SBAAIOLeIWEfBzhIxxracIOIWEfAdwCMA7AhiHmW4Sp8t5Bx6zLbiCAZwDcAjAOwMYmaFrgegFWCrEPLm5tismT4tgmhCEIgl/HrIWtscdgOQ0EMVjx4/fv4977/ve8N+/Y0+aZOCcE4NA6EMZKfwE4WwWwTQTQTQTQJGLmXND0+c5bxbw1YEADICoFwQiCh6jajTOtzgMDzXgK+O2IYaB0KBWMivV6vV6vZ379+8ePHjx48ePH79+/fv379+8ePHjx48ePH79+/fv37+O8ePHjx48eRH79+/fv37+O8ePHjx48pSPDfv37+970pAePIgABh4eHh4AAAAABh4eHh4AAAAABh4eHh4El3oDl2QgUFBQUosOwFAWB4YiInwiV/qf+c53O//77///8jf8hCEIRlDgAAIb9IIBjT+CFP/lwfgAEAxT/gMHwfB8PggCAIHEicHw/ggCHB9TAYwGUwCYEgMOwB/zE9Q0T/MFqA2jAJQGYw2YJnMcqOtfLB/uYFEAymCRgU5toq8CYpSN1HgPn+3mROHGYUQMBhPg1mnSrQYUSFJhRGTf/mHKDKYEwDhgugWmFGBKYspUxhSkzmJIPIYMY0n//mBIBAYEYE//PkZHQsjcUSAM/4ACQ5vdgBnqgAZgygQjQHkPGHKLKYcgshYDkMKMOUwog5P//8iBHltXLuRgRAxGFGDGYMQMRgRARGDGBGYEQEX///+8cR4ERhwYBoLAkmBEBGWAIiwDGWAYzAiCiMKMOUwIxJf////MB0F4wpgXjCiBkJQIXaMGUCEaA8ixMCOYkg0hlznTm7YHIZs5EpjSDSGBGJIYUYcpgxByGBGFF/lf+////9nRMCPS46/X/j5gRhRmBEDEYEYMRYBjMCICIsARFgCMsARf//////////+W/x1+W8cdZZbx/////////////////////8dZZbxx1llvHHWWW8ausq1xwjCCCDMIMIL/CAdJowjAUzE0KJ/xoDAwHwFzUBQ3MM8TIrhJ8DKYdRRA2K/AixQMNIz+BhspAYbKYGGikEQ1/wMNhsDDQaCIaAw2GwMNBr/4RAgGBQKBgQCf/8yBgEhEChEChECAYFAoGBRP/IEBIWBQaG3wMTCYDNKLA6oJgNFkcDEwmCImAwKJwMCAQIgRUwA4APMAPADjAOgA8wC0AtMB0ALDALQZswL4EHMIsCLTAdAC0wHUHjMUIHUzIwCi876o1UM+fIeDDmwZowHQFRMAtAdTBmgCww//PkZEkr1X0OAO/4ABqiJagL17AAVAC+MFRAdTAdACwwHUAtMB0AdDAdQHUwCwB0MAsAdSsB1MGUA8wOgDjA7APMDoDowDwOywB0YCwJZgYgYFYMhgyALGCWBiYCwGAFAxLAFhYAtKwLSsCwrAtKwLTAsAsLAFoBAGDADRoCMBAGFz1OlOlO0xk2C05aRAstMmwVgLFpy0hadAr/////////////////LAFhgWgWFgC0wvxmzC/EGMQYHQ/DFmzFRAsML4QcwvgdTAsAtLAFn//////+VgWf//5YAsMCwC0rAtKwLTAsAsMC0C0sAWFgC0sAWGBYBaYFoFhWDoYFgFhgWgWlYFn//////////////////0N+io6KMRug+jov///6P///o////0mL/4RHQwMdCHQwN1gHQgMdDHQqk3bwiA3hEBugwBv/gwN4MDdBgb/+r//+DAbf26tXX/rbgzoWtdl/1fCINoMBt4RBuEQbQiDYJA3Awbg2BgNoTBuz7mKZ67EnluJYxjmC/2f7Ff8jt3bGqmACo1UABUAZ4+Ys8FGYAtG/fniiFacwgUwqYsJjCpzjJj7FljKwJzGkijEZETIt/DoJEDrzmM3m40sgzI6CMKM0x8mjPZZNHAI0//PkZEor8X8"></audio>
+
+<audio id="bgm-intro" src="인트로 배경음악.mp3" loop preload="metadata"></audio>
+<audio id="bgm-game" src="unjumble game 배경음악.mp3" loop preload="metadata"></audio>
+<audio id="correctVoice" src="정답.mp3" preload="auto"></audio>
+<audio id="wrongVoice" src="오답.mp3" preload="auto"></audio>
+<audio id="completeVoice" src="완료.mp3" preload="auto"></audio>
+<script>
+const state={questions:[],round:0,score:0,correctCount:0,attempts:0,hintUsed:false,answered:false,review:[],voiceOn:true,sfxOn:true};
+let dragState=null;
+let modalMode=null;
+const BGM={on:true,key:'intro',intro:null,game:null};
+let sentencePlayback=null;
+
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a}
+function currentQuestion(){return state.questions[state.round]}
+function currentScreenId(){return document.querySelector('.screen.active')?.id||'coverScreen'}
+function positionCoverHotspots(){/* 표지는 무대 안에서 CSS % 자리를 그대로 쓴다 (무대가 표지 그림과 같은 비율) */}
+/* 화면 좌표(clientX/Y, getBoundingClientRect) → 무대(1920x1080) 좌표 */
+function stagePoint(x,y){const r=$('#app').getBoundingClientRect(),k=r.width/1920;return{x:(x-r.left)/k,y:(y-r.top)/k,k}}
+
+function showScreen(id){
+ closeModal();hideSubPeek();
+ if(id!=='resultScreen')stopSentencePlayback();/* 마지막 문제 뒤 결과 화면으로 갈 때도 문장 음성은 이어서 */
+ $$('.screen').forEach(s=>s.classList.remove('active'));
+ $('#'+id).classList.add('active');
+ document.body.classList.toggle('cover-active',id==='coverScreen');
+ positionCoverHotspots();
+ playBgm(id==='gameScreen'||id==='resultScreen'?'game':'intro');
+ window.scrollTo({top:0,behavior:'smooth'});$('#'+id).scrollTop=0;
+ updateNavButtons();
+}
+
+/* 뒤로: 학년 → 표지, 단원 → 학년, 게임 중 → 종료 확인 후 표지(앞 단계가 없다), 결과 → 표지 */
+function navHome(){const active=currentScreenId();if(active==='coverScreen')return;if(active==='gameScreen'){confirmExitGame(goHome);return;}goHome();}
+function navBack(){const active=currentScreenId();if(active==='gameScreen'){confirmExitGame(goHome);return;}if(active==='subScreen'){goToCategory();return;}if(active!=='coverScreen')goHome();}
+function navForward(){if(currentScreenId()==='coverScreen')startFromCover();}
+
+/* 앞으로 버튼은 표지에서만 쓴다 (단원 화면 등에서는 갈 곳이 없어 흐리게) */
+function updateNavButtons(){const ok=currentScreenId()==='coverScreen';$$('[onclick="navForward()"]').forEach(btn=>{btn.disabled=!ok;btn.style.opacity=ok?'':'0.35';btn.style.pointerEvents=ok?'':'none';});}
+
+/* 단원 목록: 학년 화면(categoryScreen) → 단원 화면(subScreen). 단원을 누르면 그 단원으로 게임을 새로 연다 */
+function renderCategories(){const grid=$('#categoryGrid');grid.innerHTML='';UNIT.grades().forEach(grade=>{const b=document.createElement('button');b.className='category-btn';b.innerHTML=`<span class="topic-label"><span>${grade}학년</span><small>Grade ${grade} · ${UNIT.unitsOf(grade).length}개 단원</small></span>`;b.onclick=()=>selectGrade(grade);grid.appendChild(b)});}
+function selectGrade(grade){showScreen('subScreen');renderSubs(grade);}
+function renderSubs(grade){const grid=$('#subGrid');grid.innerHTML='';$('#subHeading').textContent=`${grade}학년 단원을 선택하세요.`;UNIT.unitsOf(grade).forEach(unit=>{const t=UNIT.splitTitle(unit);const b=document.createElement('button');b.dataset.subId=unit.key;b.className='sub-btn';b.innerHTML=`<span class="topic-label"><span>${escHtml(t.lesson)}</span><small>${escHtml(t.name)}</small></span>`;b.onclick=()=>{hideSubPeek();UNIT.go(unit.key)};grid.appendChild(b)});}
+/* Game Start: 단원이 정해져 있으면 바로 게임, 없으면 단원 목록(학년)으로 */
+function startFromCover(){closeModal();if(UNIT.current)startGame();else goToCategory();}
+function goToCategory(){showScreen('categoryScreen');renderCategories();}
+function goHome(){closeModal();showScreen('coverScreen')}
+function confirmExitGame(action){openConfirm('게임을 종료할까요?','지금 나가면 풀던 문제가 사라져요.<img class="exit-owl" src="부엉이.png" alt="부엉이">',action,'나가기','계속하기')}
+function confirmHome(){confirmExitGame(goHome)}
+
+function startGame(){const pool=UNIT.words.map(sentence=>({sentence,hint:UNIT.meaning(sentence)}));const maxQuestions=Math.min(pool.length,10);state.questions=shuffle(pool).slice(0,maxQuestions);state.round=0;state.score=0;state.correctCount=0;state.review=[];showScreen('gameScreen');renderQuestion();}
+function replaySame(){startGame()}
+function renderQuestion(){state.attempts=0;state.hintUsed=false;state.answered=false;const item=currentQuestion();$('#roundChip').textContent=`${state.round+1} / ${state.questions.length}`;$('#scoreChip').textContent=`⭐ ${state.score}점`;$('#progressBar').style.width=`${(state.round/state.questions.length)*100}%`;$('#topicLine').textContent=UNIT.label();$('#hintBox').classList.remove('show');$('#hintBox').textContent='';$('#answerReveal').classList.remove('show');$('#answerReveal').innerHTML='';$('#feedbackToast').textContent='';$('#hintBtn').disabled=false;$('#submitBtn').disabled=false;let words=item.sentence.split(/\s+/);let mixed=shuffle(words);while(mixed.join(' ')===item.sentence){mixed=shuffle(words);}renderWords(mixed);}
+function renderWords(words){const board=$('#wordBoard');board.innerHTML='';words.forEach((word,i)=>{const card=document.createElement('div');card.className=`word-card palette-${i%9}`;card.textContent=word;card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',`${word}`);board.appendChild(card);});}
+function keyboardMove(e,el=e.currentTarget){if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();if(e.key==='ArrowLeft'&&el.previousElementSibling)el.parentElement.insertBefore(el,el.previousElementSibling);if(e.key==='ArrowRight'&&el.nextElementSibling)el.parentElement.insertBefore(el.nextElementSibling,el);el.focus()}
+function startPointerDrag(e,el=e.currentTarget){if(state.answered||e.button>0)return;e.preventDefault();const r=el.getBoundingClientRect(),k=stagePoint(0,0).k;const ghost=el.cloneNode(true);ghost.classList.add('drag-ghost');ghost.style.width=r.width/k+'px';ghost.style.height=r.height/k+'px';$('#app').appendChild(ghost);el.classList.add('dragging');dragState={el,ghost,dx:(e.clientX-r.left)/k,dy:(e.clientY-r.top)/k};moveGhost(e);document.addEventListener('pointermove',pointerMove,{passive:false});document.addEventListener('pointerup',endPointerDrag,{once:true});document.addEventListener('pointercancel',endPointerDrag,{once:true});}
+function moveGhost(e){if(!dragState)return;const p=stagePoint(e.clientX,e.clientY);dragState.ghost.style.left=(p.x-dragState.dx)+'px';dragState.ghost.style.top=(p.y-dragState.dy)+'px'}
+function pointerMove(e){if(!dragState)return;e.preventDefault();moveGhost(e);dragState.ghost.style.display='none';const under=document.elementFromPoint(e.clientX,e.clientY);dragState.ghost.style.display='block';const target=under&&under.closest('.word-card');const board=$('#wordBoard');if(target&&target!==dragState.el){const r=target.getBoundingClientRect();const before=(e.clientY<r.top+r.height/2&&Math.abs(e.clientY-(r.top+r.height/2))>r.height*.2)||e.clientX<r.left+r.width/2;board.insertBefore(dragState.el,before?target:target.nextSibling)}else if(under===board){board.appendChild(dragState.el)}}
+function endPointerDrag(){document.removeEventListener('pointermove',pointerMove);document.removeEventListener('pointerup',endPointerDrag);document.removeEventListener('pointercancel',endPointerDrag);if(!dragState)return;dragState.el.classList.remove('dragging');dragState.ghost.remove();dragState=null}
+function arrangedSentence(){return $$('#wordBoard .word-card').map(x=>x.textContent).join(' ')}
+function normalizeAnswer(s){return s.toLowerCase().replace(/[^a-z0-9가-힣]/g,' ').split(/\s+/).filter(Boolean).join(' ')}
+function matchesAnswer(userAnswer, targetSentence){return normalizeAnswer(userAnswer)===normalizeAnswer(targetSentence)}
+function reshuffleCurrent(){if(state.answered)return;let words=$$('#wordBoard .word-card').map(x=>x.textContent);let mixed=shuffle(words);const item=currentQuestion();while(mixed.join(' ')===item.sentence){mixed=shuffle(words)}renderWords(mixed)}
+
+function useHint(){if(state.hintUsed||state.answered)return;openConfirm('힌트를 볼까요? 💡',`점수가 3점 줄어듭니다.`,()=>{state.hintUsed=true;state.score=Math.max(0,state.score-3);$('#scoreChip').textContent=`⭐ ${state.score}점`;$('#hintBtn').disabled=true;$('#hintBox').innerHTML=hintHtml(currentQuestion());$('#hintBox').classList.add('show');closeModal()},'힌트 보기');}
+/* 단원 문장에는 우리말 뜻이 없어서, 뜻이 없으면 힌트로 첫 단어를 알려 준다 */
+function hintHtml(item){return item.hint?`<b>뜻:</b> ${item.hint}`:`<b>첫 단어:</b> ${escHtml(item.sentence.split(/\s+/)[0])}`}
+function meaningHtml(item,tag='p',cls=''){return item.hint?`<${tag}${cls?` class="${cls}"`:''}><b>뜻:</b> ${item.hint}</${tag}>`:''}
+function ttsFileName(sentence){return sentence.replace(/[.?!]+$/,'')+'.mp3'}
+function stopSentencePlayback(){const playback=sentencePlayback;sentencePlayback=null;if(playback?.audio){playback.audio.onended=null;playback.audio.onerror=null;playback.audio.pause();}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
+function playTts(sentence){
+ stopSentencePlayback();
+ if(!state.voiceOn){bgmStart();return;}
+ const playback={audio:null};sentencePlayback=playback;bgmStop();
+ const resume=()=>{if(sentencePlayback!==playback)return;sentencePlayback=null;bgmStart();};
+ let fallbackStarted=false;
+ const fallback=()=>{if(sentencePlayback!==playback||fallbackStarted)return;fallbackStarted=true;playback.audio.pause();speakWithBrowser(sentence,resume);};
+ const audio=new Audio('unjumble TTS/'+encodeURIComponent(ttsFileName(sentence)));playback.audio=audio;audio.volume=1;audio.onended=resume;audio.onerror=fallback;audio.play().catch(fallback);
+}
+function playSentenceAfterCorrectSound(sentence){if(currentScreenId()!=='gameScreen')return;playEffect('correctVoice');playTts(sentence);}
+function submitAnswer(){if(state.answered)return;const item=currentQuestion();const answer=arrangedSentence();if(matchesAnswer(answer,item.sentence)){state.answered=true;const earned=10;state.score+=earned;state.correctCount++;state.review.push({ok:true,sentence:item.sentence,meaning:item.hint});$('#scoreChip').textContent=`⭐ ${state.score}점`;playSentenceAfterCorrectSound(item.sentence);openFeedback('멋지게 문장을 완성했어요.',`<div class="correct-answer-card">${item.sentence}</div>${meaningHtml(item,'p','answer-meaning')}<p style="font-size:20px;color:#8b50d8"><b>+${earned}점 획득!</b></p>`,true);}else{state.attempts++;state.score=Math.max(0,state.score-5);$('#scoreChip').textContent=`⭐ ${state.score}점`;playEffect('wrongVoice');const board=$('#wordBoard');board.classList.remove('shake');void board.offsetWidth;board.classList.add('shake');if(state.attempts<3){const remaining=3-state.attempts;$('#feedbackToast').textContent=`순서를 다시 살펴봐요. (-5점, 기회는 ${remaining}번 남았어요)`;}else{state.answered=true;state.review.push({ok:false,sentence:item.sentence,meaning:item.hint});$('#submitBtn').disabled=true;$('#hintBtn').disabled=true;$('#answerReveal').innerHTML=`정답: <b>${item.sentence}</b>${item.hint?`<br><b>뜻:</b> ${item.hint}`:''}`;$('#answerReveal').classList.add('show');speak(item.sentence);openFeedback('괜찮아요! 다시 배우면 돼요 🌱',`<div class="correct-answer-card">${item.sentence}</div>${meaningHtml(item)}`,false);}}}
+
+function escapeForAttr(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function nextQuestion(){/* 방금 완성한 문장 음성은 '다음'을 눌러도 끝까지 들려준다 (새 문장을 틀면 그때 멈춤) */bgmStart();closeModal();if(state.round<state.questions.length-1){state.round++;renderQuestion()}else finishGame()}
+function finishGame(){$('#progressBar').style.width='100%';playEffect('completeVoice');showScreen('resultScreen');const max=state.questions.length*10;const pct=max?state.score/max:0;$('#resultTitle').textContent=pct>=.9?'문장 박사!':pct>=.65?'정말 잘했어요!':'끝까지 도전했어요!';$('#resultScore').textContent=`${state.score}점`;$('#resultCorrect').textContent=`정답 ${state.correctCount}/${state.questions.length}`;$('#resultCategory').textContent=UNIT.label();$('#reviewList').style.gridTemplateRows=`repeat(${Math.ceil(state.review.length/2)},auto)`;$('#reviewList').innerHTML=state.review.map((r,i)=>`<div class="review-item ${r.ok?'ok':'no'}"><div class="review-status">${r.ok?'정답':'다시<br>보기'}</div><div><div class="review-sentence">${r.sentence}</div><div class="review-meaning">${r.meaning}</div></div><button type="button" class="review-play" title="문장 듣기" aria-label="${i+1}번 문장 듣기" onclick="speak('${escapeForAttr(r.sentence)}')"><i class="fa-solid fa-volume-high" aria-hidden="true"></i></button></div>`).join('');makeConfetti();}
+function makeConfetti(){const c=$('#confetti');c.innerHTML='';const colors=['#ff5aa5','#a26af2','#55b9ea','#ffd04a','#6bd1b7'];for(let i=0;i<45;i++){const x=document.createElement('i');x.style.setProperty('--x',Math.random()*100+'%');x.style.setProperty('--d',(2.6+Math.random()*3.5)+'s');x.style.setProperty('--delay',(-Math.random()*5)+'s');x.style.setProperty('--c',colors[i%colors.length]);c.appendChild(x)}}
+
+function openHelp(source='nav'){$('#modalTitle').textContent='How to Play';$('#modalBody').innerHTML=`<section class="how-section"><h3>오늘의 미션</h3><p>흩어진 단어 카드를 바른 순서로 놓아 영어 문장을 완성해요.</p></section><section class="how-section"><h3>게임 방법</h3><ul class="how-list"><li>1. Game Start를 누르면 이번 단원의 문장으로 게임이 시작됩니다.</li><li>2. 한 판에 최대 10문제가 나와요.</li><li>3. 순서에 맞게 카드를 드래그해 문장을 완성해요.</li><li>4. 문장을 모두 완성하면 끝!</li></ul></section><section class="how-section"><h3>점수 규칙</h3><ul class="how-list"><li>정답이면 +10점, 오답이면 -5점</li><li>힌트를 보면 -3점</li></ul></section>`;$('#modalActions').innerHTML=source==='intro'?'<button class="secondary-btn" onclick="closeModal()">닫기</button><button class="primary-btn" onclick="startFromCover()">Game Start</button>':'';modalMode='help';openModal();$('.modal-close').style.display=source==='intro'?'none':'flex';}
+function toggleSfx(){state.sfxOn=!state.sfxOn;updateUtilityButtons();}
+function openFeedback(title,body,ok){modalMode='answer';$('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;$('#modalActions').innerHTML=`<button class="primary-btn" onclick="nextQuestion()">${state.round===state.questions.length-1?'결과 보기 🎉':'다음 ➜'}</button>`;const closeBtn=$('.modal-close');closeBtn.style.display='none';openModal();}
+function openConfirm(title,body,yesFn,yesText='네',noText='아니요'){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=`<p>${body}</p>`;window.__confirmAction=yesFn;$('#modalActions').innerHTML=`<button class="secondary-btn" onclick="closeModal()">${noText}</button><button class="primary-btn" onclick="runConfirm()">${yesText}</button>`;modalMode='confirm';const closeBtn=$('.modal-close');closeBtn.style.display='flex';openModal();}
+function runConfirm(){const fn=window.__confirmAction;window.__confirmAction=null;closeModal();if(fn)fn()}
+function openModal(){const m=$('#modalBackdrop');const closeBtn=$('.modal-close');closeBtn.style.display=(modalMode==='answer'?'none':'flex');m.classList.add('show');setTimeout(()=>m.querySelector('button')?.focus(),50)}
+function closeModal(){modalMode=null;$('.modal-close').style.display='flex';$('#modalBackdrop').classList.remove('show')}
+$('#modalBackdrop').addEventListener('click',e=>{if(e.target.id==='modalBackdrop'&&modalMode!=='answer')closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#modalBackdrop').classList.contains('show')&&modalMode!=='answer')closeModal()});
+
+/* 효과음(정답·오답·완료): 아이패드(사파리·크롬)에서 <audio> 가 화면 잠금·앱 전환 뒤 소리 없이 멈춰
+   새로고침해야 다시 나던 문제 → Web Audio 로 한 번 불러 두고 매번 새로 재생한다.
+   잠금·앱 전환으로 멈춘 오디오는 다음 터치 때 깨우고, 그래도 안 깨어나면 새로 만든다.
+   Web Audio 를 쓸 수 없을 때(파일로 직접 연 경우 등)는 예전처럼 <audio> 로 재생한다 */
+const SFX=(function(){
+  const FILES={correctVoice:'정답.mp3',wrongVoice:'오답.mp3',completeVoice:'완료.mp3'};
+  const AC=window.AudioContext||window.webkitAudioContext;
+  const buffers={};let ctx=null,loading=null,needCheck=false;
+  // iOS 17+: 무음 모드에서도 효과음이 나도록 '재생' 앱으로 알린다
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
+  function newCtx(){try{if(ctx&&ctx.state!=='closed')ctx.close().catch(()=>{});}catch(e){}ctx=AC?new AC():null;return ctx;}
+  function decode(c,data){return new Promise((res,rej)=>{const p=c.decodeAudioData(data,res,rej);if(p&&p.then)p.then(res,rej);});}
+  function load(){
+    if(loading||!ctx||location.protocol==='file:')return loading;
+    loading=Promise.all(Object.entries(FILES).map(([id,f])=>fetch(encodeURI(f)).then(r=>{if(!r.ok)throw new Error(f);return r.arrayBuffer();}).then(d=>decode(ctx,d)).then(b=>{buffers[id]=b;}).catch(()=>{})));
+    return loading;
+  }
+  // 터치·클릭할 때마다: 오디오가 멈춰 있으면 깨운다 (iOS 는 사용자 동작 안에서만 깨울 수 있다)
+  function wake(){
+    if(!AC)return;
+    if(!ctx)newCtx();
+    if(ctx.state!=='running'){
+      const c=ctx;c.resume().catch(()=>{});
+      // 잠금·앱 전환 뒤 'interrupted' 등에서 못 빠져나오면 새로 만든다 (불러 둔 소리는 그대로 쓴다)
+      if(needCheck)setTimeout(()=>{if(ctx===c&&c.state!=='running'){newCtx();try{ctx.resume();}catch(e){}}},250);
+    }
+    needCheck=false;
+    try{const s=ctx.createBufferSource();s.buffer=ctx.createBuffer(1,1,22050);s.connect(ctx.destination);s.start(0);}catch(e){}
+    load();
+  }
+  function playElement(id){
+    const a=$('#'+id);if(!a)return;
+    try{a.volume=1;a.currentTime=0;}catch(e){}
+    const p=a.play();
+    // 멈춘 <audio> 는 load() 로 되살려 다음번엔 나오게 한다
+    if(p&&p.catch)p.catch(()=>{try{a.load();}catch(e){}});
+  }
+  function play(id){
+    const b=buffers[id];
+    if(!ctx||!b){playElement(id);return;}
+    const c=ctx,go=()=>{const s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0);};
+    if(c.state==='running'){go();return;}
+    let done=false;
+    c.resume().then(()=>{if(!done&&c.state==='running'){done=true;go();}}).catch(()=>{});
+    setTimeout(()=>{if(!done){done=true;playElement(id);}},200);
+  }
+  ['touchend','pointerup','click','keydown'].forEach(t=>document.addEventListener(t,wake,{capture:true,passive:true}));
+  // 화면 잠금·다른 앱에서 돌아오면 다음 터치 때 오디오 상태를 다시 확인한다 (<audio> 효과음도 초기화)
+  function back(){needCheck=true;Object.keys(FILES).forEach(id=>{const a=$('#'+id);if(a&&a.paused){try{a.load();}catch(e){}}});}
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)back();});
+  window.addEventListener('pageshow',e=>{if(e.persisted)back();});
+  window.addEventListener('focus',()=>{needCheck=true;});
+  return {play,wake,state:()=>ctx?ctx.state:'none',loaded:()=>Object.keys(buffers)};
+})();
+function playEffect(id){if(!state.sfxOn)return;SFX.play(id);}
+function getEnglishVoice(){const voices=speechSynthesis.getVoices();return voices.find(voice=>/^en-us$/i.test(voice.lang))||voices.find(voice=>/^en/i.test(voice.lang))||null}
+if('speechSynthesis'in window)speechSynthesis.addEventListener('voiceschanged',getEnglishVoice);
+function speak(text){playTts(text)}
+function speakWithBrowser(text,resume=()=>{}){if(!('speechSynthesis'in window)){resume();return;}window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);const voice=getEnglishVoice();u.lang='en-US';if(voice)u.voice=voice;u.rate=.82;u.pitch=1.08;u.volume=1;u.onend=resume;u.onerror=resume;try{speechSynthesis.speak(u)}catch(e){resume()}}
+function toggleVoice(){state.voiceOn=!state.voiceOn;updateUtilityButtons()}
+function updateUtilityButtons(){$$('#sfx-toggle-icon,#sfx-toggle-icon-2,#sfx-toggle-icon-3,#sfx-toggle-icon-4,#sfx-toggle-icon-5').forEach(el=>{if(!el)return;el.className=state.sfxOn?'fa-solid fa-bell':'fa-solid fa-bell-slash';});$$('#music-toggle-icon,#music-toggle-icon-2,#music-toggle-icon-3,#music-toggle-icon-4,#music-toggle-icon-5').forEach(el=>{if(!el)return;el.className=BGM.on?'fa-solid fa-music':'fa-solid fa-volume-xmark';});$$('.nav-btn-circle[onclick="toggleSfx()"]').forEach(btn=>{btn.classList.toggle('muted',!state.sfxOn);btn.setAttribute('aria-pressed',String(!state.sfxOn));});$$('.nav-btn-circle[onclick="toggleBgm()"]').forEach(btn=>{btn.classList.toggle('muted',!BGM.on);btn.setAttribute('aria-pressed',String(!BGM.on));});$$('#fullscreen-toggle-icon,#fullscreen-toggle-icon-2,#fullscreen-toggle-icon-3,#fullscreen-toggle-icon-4,#fullscreen-toggle-icon-5').forEach(el=>{if(!el)return;el.className=document.fullscreenElement?'fa-solid fa-compress':'fa-solid fa-expand';});}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen();updateUtilityButtons()}catch(e){}}
+
+let peekTimer=null;
+function escHtml(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function showSubPeek(btn,sub){clearTimeout(peekTimer);const el=$('#subPeek');if(!el)return;const list=sub.questions.slice(0,8).map(q=>`<li>${escHtml(q.sentence)}</li>`).join('');const more=sub.questions.length>8?`<div class="peek-more">외 ${sub.questions.length-8}문장</div>`:'';el.innerHTML=`<div class="peek-head">${sub.emoji} ${escHtml(sub.name)}</div><ol class="peek-list">${list}</ol>${more}`;el.style.visibility='hidden';el.classList.add('show');const br=btn.getBoundingClientRect(),a=stagePoint(br.left,br.top),b=stagePoint(br.right,br.bottom),r={left:a.x,top:a.y,width:b.x-a.x,bottom:b.y},w=el.offsetWidth,h=el.offsetHeight;let left=r.left+r.width/2-w/2;left=Math.max(10,Math.min(left,1920-w-10));let top=r.bottom+8;if(top+h>1080-10)top=Math.max(10,r.top-h-8);el.style.left=left+'px';el.style.top=top+'px';el.style.visibility='visible';}
+function scheduleHidePeek(){clearTimeout(peekTimer);peekTimer=setTimeout(hideSubPeek,140)}
+function hideSubPeek(){clearTimeout(peekTimer);const el=$('#subPeek');if(!el)return;el.classList.remove('show');}
+$('#subPeek').addEventListener('mouseenter',()=>clearTimeout(peekTimer));
+$('#subPeek').addEventListener('mouseleave',scheduleHidePeek);
+
+function bgmEl(key=BGM.key){if(!BGM[key]){BGM[key]=$('#bgm-'+key);if(BGM[key])BGM[key].volume=.18;}return BGM[key]}
+function playBgm(key){const changed=BGM.key!==key;BGM.key=key;['intro','game'].forEach(track=>{const audio=bgmEl(track);if(audio&&track!==key)audio.pause();});const audio=bgmEl(key);if(!audio||!BGM.on||sentencePlayback||document.hidden)return;if(changed)audio.currentTime=0;audio.play().catch(()=>{})}
+function bgmStart(){playBgm(BGM.key)}
+function bgmStop(){const audio=bgmEl();if(audio)audio.pause()}
+function toggleBgm(){BGM.on=!BGM.on;if(BGM.on)bgmStart();else ['intro','game'].forEach(track=>bgmEl(track)?.pause());updateUtilityButtons();}
+document.addEventListener('click',()=>{if(BGM.on)bgmStart()},{once:false});
+document.addEventListener('keyup',()=>{if(BGM.on)bgmStart()},{once:false});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmEl()?.pause();else if(BGM.on)bgmStart()});
+window.addEventListener('load',()=>{BGM.on=true;bgmStart();updateUtilityButtons();});
+document.addEventListener('DOMContentLoaded',()=>{bgmStart()},{once:true});
+
+['#top-nav-bar-cover','#top-nav-bar-2','#top-nav-bar-3','#top-nav-bar-4','#top-nav-bar-5'].forEach(selector=>$(selector)?.remove());
+$('#subGrid').addEventListener('mouseover',e=>{const button=e.target.closest('.sub-btn[data-sub-id]');if(!button||!$('#subGrid').contains(button))return;const unit=UNIT.units.find(item=>item.key===button.dataset.subId);if(unit)showSubPeek(button,{emoji:'',name:UNIT.splitTitle(unit).lesson,questions:unit.words.map(w=>({sentence:w.en}))})});
+$('#subGrid').addEventListener('mouseout',e=>{if(e.target.closest('.sub-btn[data-sub-id]'))scheduleHidePeek()});
+$('#wordBoard').addEventListener('pointerdown',e=>{const card=e.target.closest('.word-card');if(card&&$('#wordBoard').contains(card))startPointerDrag(e,card)});
+$('#wordBoard').addEventListener('keydown',e=>{const card=e.target.closest('.word-card');if(card&&$('#wordBoard').contains(card))keyboardMove(e,card)});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','-','0'].includes(e.key))e.preventDefault();});
+window.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('resize',positionCoverHotspots);
+window.visualViewport?.addEventListener('resize',positionCoverHotspots);
+window.addEventListener('load',positionCoverHotspots);
+
+/* 표지에 지금 단원 이름을 보여 준다 */
+document.querySelectorAll('[data-unit-label]').forEach(el=>{el.textContent=UNIT.label();el.hidden=!UNIT.current;});
+renderCategories();updateUtilityButtons();updateNavButtons();
+
+/* 모든 화면이 1920x1080 무대(#app) 하나 — 팝업·미리보기도 무대 안으로 옮겨 같은 배율로 커지고 작아진다 */
+(function(){
+  const app=$('#app');
+  app.append($('#subPeek'),$('#modalBackdrop'));
+  function layout(){TopNav.fit(app,1920,1080);}
+  addEventListener('resize',layout);
+  /* 태블릿을 돌린 뒤 창 크기가 늦게 바뀌는 경우가 있어 잠시 뒤 한 번 더 맞춘다 */
+  addEventListener('orientationchange',()=>{layout();setTimeout(layout,300);});
+  layout();
+})();
+
+/* 아이패드·갤럭시 탭: 두 손가락 확대/축소·두 번 탭 확대를 막아 화면 비율을 고정한다
+   (iOS Safari 는 viewport 의 user-scalable=no 를 무시하므로 터치 이벤트에서 직접 막는다) */
+(function(){
+  const block=e=>{if(e.cancelable)e.preventDefault();};
+  ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,block,{passive:false}));
+  document.addEventListener('touchstart',e=>{if(e.touches.length>1)block(e);},{passive:false});
+  document.addEventListener('touchmove',e=>{if(e.touches.length>1||(e.scale!==undefined&&e.scale!==1))block(e);},{passive:false});
+  /* 키보드·트랙패드가 달린 태블릿: Ctrl+휠, Ctrl +/-/0 확대도 막는다 */
+  document.addEventListener('wheel',e=>{if(e.ctrlKey)block(e);},{passive:false});
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','=','-','_','0'].includes(e.key))block(e);});
+  /* 그래도 확대된 채로 남았으면(브라우저 '강제 확대' 설정 등) viewport 를 다시 적용해 1배로 되돌린다 */
+  const vp=document.querySelector('meta[name="viewport"]'),vpContent=vp&&vp.getAttribute('content');
+  window.visualViewport?.addEventListener('resize',()=>{if(vp&&visualViewport.scale>1.01){vp.setAttribute('content',vpContent+', minimum-scale=1');setTimeout(()=>vp.setAttribute('content',vpContent),50);}});
+})();
+</script>
+</body>
+</html>
