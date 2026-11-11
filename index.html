@@ -37,9 +37,11 @@ button:focus-visible,[tabindex]:focus-visible{outline:5px solid rgba(76,63,152,.
 .cover-hotspot:hover,.cover-hotspot:focus-visible,.cover-hotspot:active{transform:none;filter:none;box-shadow:none;outline:none}
 .cover-hotspot.help{left:31%;top:81%;width:18%;height:14%}
 .cover-hotspot.start{left:48%;top:81%;width:20%;height:14%}
-/* 표지: 지금 단원 이름 (문장 카드판과 시작 버튼 사이) */
+/* 표지: 지금 단원 이름 (기본값. 실제 위치·크기는 아래 #coverScreen 규칙) */
 [data-unit-label]{position:absolute;z-index:3;left:50.3%;top:84.4%;transform:translate(-50%,-50%);max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff;color:#8b50d8;border:3px solid #d9c3f2;border-radius:999px;padding:3px 24px;font-size:25px;line-height:1.25;box-shadow:0 4px 12px rgba(75,45,92,.16);pointer-events:none}
 [data-unit-label][hidden]{display:none}
+/* C안: 제목 바로 아래(조금 내림). #coverScreen 을 붙여 기존 글자 크기 설정보다 우선 적용 */
+#coverScreen [data-unit-label]{top:23%;font-size:34px;padding:4px 30px;max-width:60%}
 .cover-corner{position:absolute;top:1.6%;right:1.5%;display:flex;gap:10px}
 .cover-corner .round-icon{background:rgba(255,255,255,.78);backdrop-filter:blur(8px)}
 
