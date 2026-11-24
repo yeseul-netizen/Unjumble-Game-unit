@@ -633,7 +633,7 @@ function useHint(){if(state.hintUsed||state.answered)return;openConfirm('힌트�
 /* 단원 문장에는 우리말 뜻이 없어서, 뜻이 없으면 힌트로 첫 단어를 알려 준다 */
 function hintHtml(item){return item.hint?`<b>뜻:</b> ${item.hint}`:`<b>첫 단어:</b> ${escHtml(item.sentence.split(/\s+/)[0])}`}
 function meaningHtml(item,tag='p',cls=''){return item.hint?`<${tag}${cls?` class="${cls}"`:''}><b>뜻:</b> ${item.hint}</${tag}>`:''}
-function ttsFileName(sentence){return sentence.replace(/[.?!]+$/,'')+'.mp3'}
+function ttsFileName(sentence){return sentence.replace(/[.?!]+$/,'').replace(/:/g,'_')+'.mp3'}/* 파일 이름에는 : 를 못 쓰므로 6:30 → 6_30 */
 function stopSentencePlayback(){const playback=sentencePlayback;sentencePlayback=null;if(playback?.audio){playback.audio.onended=null;playback.audio.onerror=null;playback.audio.pause();}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
 function playTts(sentence){
  stopSentencePlayback();
